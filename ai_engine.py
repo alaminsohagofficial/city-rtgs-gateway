@@ -7,10 +7,9 @@ class SalsabilahAIEngine:
         """
         Gemini API কনফিগারেশন এবং মিনিস্টার-মাইওয়ান ভেরিফাইড বেনিফিশিয়ারি ডাটাবেস ইনিশিয়ালাইজেশন।
         """
-        if api_key:
-            genai.configure(api_key=api_key)
-        else:
-            genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY"))
+        # আপনার প্রদানকৃত এপিআই কি সরাসরি কনফিগার করা হলো
+        active_api_key = api_key or "AIzaSyAi8mNE4ruR7GiAoc7XOsU6eZO3SSbbXw4"
+        genai.configure(api_key=active_api_key)
         
         # Gemini মডেল সেটআপ
         self.model = genai.GenerativeModel('gemini-1.5-flash')
