@@ -2,6 +2,7 @@ import os
 import datetime
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from ai_engine import SalsabilahAIEngine
 
 app = FastAPI(
     title="Salsabilah Empires - City RTGS & AI Engine",
@@ -9,33 +10,23 @@ app = FastAPI(
     description="Autonomous RTGS Banking & Gemini AI Integration for S.R. Electronics Park & Minister-Myone Supply Chain"
 )
 
-VERIFIED_BENEFICIARIES = {
-    "MINISTER_BANANI_IBBL": {
-        "company_name": "Minister Hi-Tech Park Electronics Ltd.",
-        "bank_name": "Islami Bank Bangladesh PLC (IBBL)",
-        "branch_name": "Banani Branch",
-        "routing_number": "125260433",
-        "account_number": "20503910100020103"
-    }
-}
+ai_engine = SalsabilahAIEngine()
 
 class InvoiceRequest(BaseModel):
     invoice_prompt: str
 
 @app.post("/api/v1/rtgs/process-invoice")
 def process_rtgs_via_ai(payload: InvoiceRequest):
-    extracted_data = {
-        "amount": 5000000.00,
-        "beneficiary_key": "MINISTER_BANANI_IBBL",
-        "remarks": payload.invoice_prompt
-    }
+    # Gemini AI ইঞ্জিন ব্যবহার করে ইনভয়েস পার্স করা
+    extracted_data = ai_engine.extract_invoice_data(payload.invoice_prompt)
     
-    beneficiary_info = VERIFIED_BENEFICIARIES.get(extracted_data['beneficiary_key'])
+    beneficiary_info = ai_engine.validate_beneficiary(extracted_data.get('beneficiary_key'))
     if not beneficiary_info:
         raise HTTPException(status_code=400, detail="Unverified Beneficiary Account")
         
-    amount = float(extracted_data['amount'])
+    amount = float(extracted_data.get('amount', 0))
     
+    # RTGS ন্যূনতম লিমিট চেক (১ লক্ষ টাকা)
     if amount < 100000:
         raise HTTPException(status_code=400, detail="Amount below RTGS minimum threshold (BDT 100,000)")
         
@@ -84,7 +75,7 @@ Total Debited    : BDT {total_debited:,.2f}
 4. STATUS & SETTLEMENT
 ------------------------------------------------------------
 Status           : SUCCESSFUL (Settled via Bangladesh Bank RTGS)
-Remarks          : {extracted_data['remarks']}
+Remarks          : {extracted_data.get('remarks')}
 
 ============================================================
        This is a system-generated electronic receipt.
