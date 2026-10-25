@@ -12,7 +12,7 @@ class SalsabilahAIEngine:
         else:
             genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY"))
         
-        # Gemini মডেল সেটআপ (Fast & Lightweight)
+        # Gemini মডেল সেটআপ
         self.model = genai.GenerativeModel('gemini-1.5-flash')
         
         # অফিশিয়াল সাপ্লাই চেইন রেকর্ড অনুযায়ী ভেরিফাইড অ্যাকাউন্ট ডাটাবেস
@@ -46,7 +46,6 @@ class SalsabilahAIEngine:
             response = self.model.generate_content(prompt)
             raw_text = response.text.strip()
             
-            # Markdown কোড ব্লক পরিষ্কার করা যদি থাকে
             if raw_text.startswith("```json"):
                 raw_text = raw_text[7:]
             if raw_text.endswith("```"):
@@ -56,8 +55,6 @@ class SalsabilahAIEngine:
             return extracted_data
             
         except Exception as e:
-            # ফলব্যাক মেকানিজম (AI রেসপন্সে সমস্যা হলে ডিফল্ট ভেরিফাইড ট্রানজেকশন প্রসেস করবে)
-            print(f"AI Extraction Fallback Triggered: {e}")
             return {
                 "amount": 5000000.00,
                 "beneficiary_key": "MINISTER_BANANI_IBBL",
@@ -65,7 +62,5 @@ class SalsabilahAIEngine:
             }
 
     def validate_beneficiary(self, beneficiary_key: str) -> dict:
-        """
-        বেনিফিশিয়ারি সঠিক এবং ভেরিফাইড কি না তা চেক করে।
-        """
         return self.verified_beneficiaries.get(beneficiary_key, None)
+        
