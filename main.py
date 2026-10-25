@@ -2,19 +2,13 @@ import os
 import datetime
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import google.generativeai as genai
 
-# FastAPI অ্যাপ্লিকেশন ইনিশিয়ালাইজেশন
 app = FastAPI(
     title="Salsabilah Empires - City RTGS & AI Engine",
     version="2.0",
     description="Autonomous RTGS Banking & Gemini AI Integration for S.R. Electronics Park & Minister-Myone Supply Chain"
 )
 
-# Gemini API কনফিগারেশন (এনভায়রনমেন্ট ভেরিয়েবল থেকে বা সরাসরি কি দিয়ে)
-# genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY"))
-
-# ভেরিফাইড বেনিফিশিয়ারি ডাটাবেস (Minister-Myone Group Official Records)
 VERIFIED_BENEFICIARIES = {
     "MINISTER_BANANI_IBBL": {
         "company_name": "Minister Hi-Tech Park Electronics Ltd.",
@@ -30,15 +24,6 @@ class InvoiceRequest(BaseModel):
 
 @app.post("/api/v1/rtgs/process-invoice")
 def process_rtgs_via_ai(payload: InvoiceRequest):
-    """
-    Gemini AI এবং সিটি ব্যাংক RTGS প্রোটোকলের মাধ্যমে পেমেন্ট প্রসেস ও ডিজিটাল স্লিপ জেনারেট করে।
-    """
-    
-    # ইনভয়েস টেক্সট থেকে ডেটা এক্সট্রাকশন (Gemini AI Integration Hook)
-    # model = genai.GenerativeModel('gemini-1.5-flash')
-    # response = model.generate_content(payload.invoice_prompt)
-    
-    # স্ট্রাকচারড সিমুলেটেড ডেটা এক্সট্রাকশন
     extracted_data = {
         "amount": 5000000.00,
         "beneficiary_key": "MINISTER_BANANI_IBBL",
@@ -51,7 +36,6 @@ def process_rtgs_via_ai(payload: InvoiceRequest):
         
     amount = float(extracted_data['amount'])
     
-    # RTGS ন্যূনতম লিমিট চেক (১ লক্ষ টাকা)
     if amount < 100000:
         raise HTTPException(status_code=400, detail="Amount below RTGS minimum threshold (BDT 100,000)")
         
@@ -62,7 +46,6 @@ def process_rtgs_via_ai(payload: InvoiceRequest):
     timestamp = datetime.datetime.now().strftime("%d-%b-%Y | %I:%M:%S %p")
     txn_ref = f"RTGS-CB{datetime.datetime.now().strftime('%Y%m%d')}-{os.urandom(2).hex().upper()}"
     
-    # ব্যাংকিং ডিজিটাল রিসিপ্ট বা স্লিপ আউটপুট
     receipt_text = f"""
 ============================================================
                    CITY BANK PLC.
@@ -119,3 +102,4 @@ Remarks          : {extracted_data['remarks']}
 @app.get("/")
 def home():
     return {"message": "Salsabilah City RTGS Engine is active and running successfully."}
+    
