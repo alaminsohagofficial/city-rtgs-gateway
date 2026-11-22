@@ -1,5 +1,2 @@
-google-generativeai
-fastapi
-uvicorn
-requests
-python-dotenv
+google-genai>=1.0.0
+requests>=2.31.0
