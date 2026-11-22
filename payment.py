@@ -1,52 +1,47 @@
+from typing import Any
 import requests
-from config import Config
+from config import config
 
-class RTGSPaymentProcessor:
-    def __init__(self):
-        self.api_url = Config.CITY_BANK_API_URL
-        self.api_key = Config.BANK_API_KEY
-        self.api_secret = Config.BANK_API_SECRET
 
-    def process_payment(self, transaction_data: dict) -> dict:
-        amount = transaction_data.get("amount", 0.0)
-        account_number = transaction_data.get("account_number")
-        routing_number = transaction_data.get("routing_number")
+def calculate_rtgs_settlement(amount: float) -> dict[str, float]:
+    if amount <= 0:
+        raise ValueError("Payment amount must be greater than zero.")
 
-        total_charge = Config.calculate_total_charge(amount)
-        grand_total = amount + total_charge
+    rtgs_charge = round(config.rtgs_fee_bdt, 2)
+    vat_amount = round(rtgs_charge * config.vat_rate, 2)
+    total_charge = round(rtgs_charge + vat_amount, 2)
+    net_settlement = round(amount - total_charge, 2)
 
-        payload = {
-            "account_number": account_number,
-            "routing_number": routing_number,
-            "principal_amount": amount,
-            "rtgs_charge": total_charge,
-            "total_debited": grand_total,
-            "currency": "BDT"
+    return {
+        "gross_amount": round(amount, 2),
+        "rtgs_charge": rtgs_charge,
+        "vat_amount": vat_amount,
+        "total_charges": total_charge,
+        "net_settlement": net_settlement,
+    }
+
+
+def validate_rtgs_details(routing_number: str, account_number: str) -> bool:
+    clean_routing = (routing_number or "").strip()
+    clean_account = (account_number or "").strip()
+    return len(clean_routing) == 9 and clean_routing.isdigit() and len(clean_account) >= 6
+
+
+def dispatch_rtgs_payment(payload: dict[str, Any]) -> dict[str, Any]:
+    if not config.bank_api_endpoint or not config.bank_api_token:
+        return {
+            "status": "SKIPPED_NO_BANK_CREDENTIALS",
+            "payload": payload,
         }
 
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
+    url = f"{config.bank_api_endpoint.rstrip('/')}/v1/rtgs/payments"
+    headers = {
+        "Authorization": f"Bearer {config.bank_api_token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
 
-        try:
-            response = requests.post(f"{self.api_url}/transfer", json=payload, headers=headers, timeout=30)
-            
-            if response.status_code == 200:
-                return {
-                    "status": "success",
-                    "message": "টাকা সফলভাবে পরিশোধ করা হয়েছে।",
-                    "gateway_response": response.json()
-                }
-            else:
-                return {
-                    "status": "failed",
-                    "message": "ব্যাংক গেটওয়ে পেমেন্ট প্রত্যাখ্যান করেছে।",
-                    "error": response.text
-                }
-        except Exception as e:
-            return {
-                "status": "error",
-                "message": "নেটওয়ার্ক বা সার্ভার ত্রুটি ঘটেছে।",
-                "details": str(e)
-            }
+    response = requests.post(url, json=payload, headers=headers, timeout=20)
+    response.raise_for_status()
+    return response.json() if response.text else {"status": "SUBMITTED"}
+    
