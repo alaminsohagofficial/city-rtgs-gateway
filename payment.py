@@ -28,20 +28,18 @@ def validate_rtgs_details(routing_number: str, account_number: str) -> bool:
 
 
 def dispatch_rtgs_payment(payload: dict[str, Any]) -> dict[str, Any]:
-    if not config.city_bank_api_url or not config.bank_api_key:
+    if not config.bank_api_endpoint or not config.bank_api_token:
         return {
             "status": "SKIPPED_NO_BANK_CREDENTIALS",
             "payload": payload,
         }
 
-    url = f"{config.city_bank_api_url.rstrip('/')}/payments"
+    url = f"{config.bank_api_endpoint.rstrip('/')}/v1/rtgs/payments"
     headers = {
-        "X-API-Key": config.bank_api_key,
+        "Authorization": f"Bearer {config.bank_api_token}",
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
-    if config.bank_api_secret:
-        headers["X-API-Secret"] = config.bank_api_secret
 
     response = requests.post(url, json=payload, headers=headers, timeout=20)
     response.raise_for_status()
